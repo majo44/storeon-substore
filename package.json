@@ -1,0 +1,98 @@
+{
+  "name": "storeon-substore",
+  "version": "0.1.0",
+  "description": "Substore utility for [Storeon]",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/majo44/storeon-substore.git"
+  },
+  "bugs": "https://github.com/majo44/storeon-substore/issues",
+  "keywords": [
+    "storeon",
+    "store",
+    "state",
+    "management"
+  ],
+  "main": "./umd/index.js",
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "author": {
+    "email": "majo44@gmail.com",
+    "name": "Pawel Majewski"
+  },
+  "contributors": [
+    {
+      "email": "majo44@gmail.com",
+      "name": "Pawel Majewski"
+    }
+  ],
+  "license": "MIT",
+  "dependencies": {},
+  "peerDependencies": {
+    "storeon": "^0.9.3"
+  },
+  "devDependencies": {
+    "@size-limit/preset-small-lib": "^2.1.5",
+    "@types/chai": "^4.2.2",
+    "@types/sinon": "^7.0.13",
+    "babel-eslint": "^10.0.1",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^6.4.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "husky": "^3.0.5",
+    "mocha": "^6.2.0",
+    "npm-run-all": "^4.1.5",
+    "nyc": "^14.1.1",
+    "sinon": "^7.4.2",
+    "sinon-chai": "^3.3.0",
+    "source-map-support": "^0.5.13",
+    "storeon": "^0.9.5",
+    "ts-node": "^8.4.1",
+    "tslib": "^1.10.0",
+    "typedoc": "^0.15.0",
+    "typescript": "^3.6.3"
+  },
+  "scripts": {
+    "size": "size-limit",
+    "build": "run-s size lint test compile docs",
+    "compile": "tsc --module umd --target es5 --outDir umd --allowJs true index.js",
+    "docs": "typedoc --theme minimal --includeDeclarations --excludeExternals --out docs --exclude \"node_modules/**/*\" index.d.ts",
+    "test": "nyc mocha",
+    "lint": "run-s lint:*",
+    "lint:types": "tsc",
+    "lint:eslint": "eslint \"index.js\"",
+    "format:eslint": "eslint \"index.js\" --fix"
+  },
+  "size-limit": [
+    {
+      "limit": "1111 B",
+      "path": "index.js"
+    }
+  ],
+  "nyc": {
+    "include": [
+      "index.js"
+    ],
+    "extension": [
+      ".js"
+    ],
+    "reporter": [
+      "text-summary",
+      "html",
+      "lcov"
+    ],
+    "branches": 100,
+    "lines": 100,
+    "functions": 100,
+    "statements": 100,
+    "sourceMap": true,
+    "instrument": true
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run build"
+    }
+  }
+}

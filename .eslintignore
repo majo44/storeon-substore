@@ -1,0 +1,6 @@
+coverage/
+dist/
+test/
+node_modules/
+*.d.ts
+*.config.js
