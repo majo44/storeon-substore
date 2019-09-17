@@ -9,7 +9,7 @@
      
 Utility for creating feature sub store for [Storeon](https://github.com/storeon/storeon).    
 
-It size is 121 B (minified and gzipped) and uses [Size Limit](https://github.com/ai/size-limit) to control size.
+It size is 150 B (minified and gzipped) and uses [Size Limit](https://github.com/ai/size-limit) to control size.
 
 ### Overview
 The goal of this library is provide the easy way to create feature sub store, 
