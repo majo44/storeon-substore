@@ -73,7 +73,7 @@ describe(`simple scenarions`, () => {
         expect(subStore.get()).to.be.eql({ flag: false});
     });
 
-    it (`should allow to properly read and set the state in handler on child store`, async () => {
+    it(`should allow to properly read and set the state in handler on child store`, async () => {
         subStore.on('a', (state) => ({
             flag: state ? !state.flag : true,
         }));
@@ -81,13 +81,52 @@ describe(`simple scenarions`, () => {
         expect(subStore.get()).to.be.eql({ flag: true});
     });
 
-    it (`should allow to properly read and set the state in handler on child of child store`, async () => {
+    it(`should allow to properly read and set the state in handler on child of child store`, async () => {
         const subSubStore = createSubstore(subStore, 'feature');
         subSubStore.on('a', (state) => ({
             flag: state ? !state.flag : true,
         }));
         subSubStore.dispatch('a');
         expect(subSubStore.get()).to.be.eql({ flag: true});
+    });
+
+    it('should behave in same way as regular store', () => {
+        function feature1CounterModule(store) {
+            store.on('@init', () => ({
+                feature: {
+                    counter: 0
+                }
+            }));
+            store.on('increment', state => ({
+                feature: {
+                    ...state.feature,
+                    counter: state.feature.counter + 1,
+                }
+            }));
+        }
+        function feature2CounterModule(store) {
+            const featureStore = createSubstore(store, 'feature');
+            featureStore.on('@init', () => ({
+                counter: 0
+            }));
+            featureStore.on('increment', state => ({
+                counter: state.counter + 1,
+            }));
+        }
+        function feature3CounterModule(store) {
+            const featureStore = createSubstore(store, 'feature');
+            const featureCounterStore = createSubstore(featureStore, 'counter');
+            featureCounterStore.on('@init', () => 0);
+            featureCounterStore.on('increment', state => state + 1);
+        }
+        const store1 = createStore([feature1CounterModule]);
+        const store2 = createStore([feature2CounterModule]);
+        const store3 = createStore([feature3CounterModule]);
+        store1.dispatch('increment');
+        store2.dispatch('increment');
+        store3.dispatch('increment');
+        expect(store1.get().feature.counter).to.be.eql(store2.get().feature.counter);
+        expect(store2.get().feature.counter).to.be.eql(store3.get().feature.counter);
     })
 
 });

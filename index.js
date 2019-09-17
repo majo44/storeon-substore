@@ -30,16 +30,22 @@ export function createSubstore(store, key) {
     return {
         on: (event, handler) => store.on(event, (state, data) => {
             const result = handler(state ? state[key] : undefined, data);
-            if (result && !result.then) {
+            if (result && result.then) {
+                return result;
+            }
+            if (Object(result) !== result) {
                 return {
                     ...state,
-                    [key]: {
-                        ...(state ? state[key] : {}),
-                        ...result,
-                    },
+                    [key]: result,
                 };
             }
-            return result;
+            return {
+                ...state,
+                [key]: {
+                    ...(state ? state[key] : {}),
+                    ...result,
+                },
+            };
         }),
         get: () => {
             const state = store.get();
