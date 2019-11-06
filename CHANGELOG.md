@@ -1,5 +1,7 @@
 # Change Log
 This project adheres to [Semantic Versioning](http://semver.org/).
+## 0.4.0
+* Performance optimization.
 ## 0.3.0
 * Fix for infinite loop on undefined return from handler.
 ## 0.2.0

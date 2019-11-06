@@ -127,6 +127,33 @@ describe(`simple scenarions`, () => {
         store3.dispatch('increment');
         expect(store1.get().feature.counter).to.be.eql(store2.get().feature.counter);
         expect(store2.get().feature.counter).to.be.eql(store3.get().feature.counter);
+    });
+
+    it ('should return same state as previous if value in sub state not changed on primitives', () => {
+        subStore.on('set', (s, data) => data);
+        subStore.dispatch('set', 1);
+        let st1 = store.get();
+        subStore.dispatch('set', 2);
+        let st2 = store.get();
+        subStore.dispatch('set', 2);
+        let st3 = store.get();
+        expect(st1).to.not.be.eq(st2);
+        expect(st2).to.be.eq(st3);
+    });
+
+    it ('should return same state as previous if value in sub state not changed on complex object', () => {
+        const featureStore = createSubstore(subStore, 'sub');
+        featureStore.on('set', (s, data) => data);
+        const val1 = { x : "1"};
+        const val2 = { x : "2"};
+        store.dispatch('set', val1);
+        let st1 = store.get();
+        store.dispatch('set', val2);
+        let st2 = store.get();
+        store.dispatch('set', val2);
+        let st3 = store.get();
+        expect(st1).to.not.be.eq(st2);
+        expect(st2).to.be.eq(st3);
     })
 
 });
