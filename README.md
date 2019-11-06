@@ -9,7 +9,7 @@
      
 Utility for creating feature sub store for [Storeon](https://github.com/storeon/storeon).    
 
-It size is 225 B (minified and gzipped) and uses [Size Limit](https://github.com/ai/size-limit) to control size.
+It size is 140 B (minified and gzipped) and uses [Size Limit](https://github.com/ai/size-limit) to control size.
 
 ### Overview
 The goal of this library is provide the easy way to create feature sub store, 
@@ -86,9 +86,12 @@ export function featureCounterModule(store) {
 }
 ```
 
-Two important remarks:
+Three important remarks:
 * The state delivered to handler attached to sub store, can get the `undefined` 
-value if the state of the feature is not yet set.   
+value if the state of the feature is not yet set.
+* The state returned from handler attached to sub store, have to return full sub state, as it will replace previous 
+value instead of merging previous and new one. 
+This is a bit different behaviour than on regular storeon store where you can return just projection of state. 
 * Sub store operates on same events like parent store,
 what means that dispatched event on sub store will be also propagated to parent, 
 and event dispatched on parent will be also handled by handlers registered on sub store

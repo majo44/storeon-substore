@@ -1,19 +1,4 @@
 /**
- * @param {Object} obj1
- * @param {Object} obj2
- * @returns {boolean}
- */
-function same(obj1, obj2) {
-    const keys = Object.keys(obj2);
-    for (let i = 0; i < keys.length; i += 1) {
-        if (obj1[keys[i]] !== obj2[keys[i]]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
  * Creates instance of storeon feature sub store.
  *
  * @example
@@ -49,20 +34,10 @@ export function createSubstore(store, key) {
                 if (typeof result.then === 'function') {
                     return result;
                 }
-                if (Object(result) !== result) {
-                    if (!state || result !== state[key]) {
-                        return {
-                            ...state,
-                            [key]: result,
-                        };
-                    }
-                } else if (!state || !state[key] || !same(state[key], result)) {
+                if (!state || result !== state[key]) {
                     return {
                         ...state,
-                        [key]: {
-                            ...(state ? state[key] : {}),
-                            ...result,
-                        },
+                        [key]: result,
                     };
                 }
             }

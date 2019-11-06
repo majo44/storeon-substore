@@ -154,6 +154,25 @@ describe(`simple scenarions`, () => {
         let st3 = store.get();
         expect(st1).to.not.be.eq(st2);
         expect(st2).to.be.eq(st3);
-    })
+    });
+
+    it ('should support multi branch store', () => {
+        const feature1Store = createSubstore(store, 'feature1');
+        const feature2Store = createSubstore(store, 'feature2');
+        feature2Store.on('feat2', (s, data) => data);
+        const subStore1 = createSubstore(feature1Store, 'sub1');
+        subStore1.on('set1', (s, data) => data);
+        const subStore2 = createSubstore(feature1Store, 'sub2');
+        subStore2.on('set2', (s, data) => data);
+        const val1 = { x : "1"};
+        const val2 = { x : "2"};
+        const val3 = { x : "3"};
+        subStore1.dispatch('set1', val1);
+        subStore2.dispatch('set2', val2);
+        feature2Store.dispatch('feat2', val3);
+        expect(store.get().feature1.sub1).to.be.eq(val1);
+        expect(store.get().feature1.sub2).to.be.eq(val2);
+        expect(store.get().feature2).to.be.eq(val3);
+    });
 
 });

@@ -1,6 +1,6 @@
 {
   "name": "storeon-substore",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Substore utility for [Storeon]",
   "repository": {
     "type": "git",
@@ -67,7 +67,7 @@
   },
   "size-limit": [
     {
-      "limit": "225 B",
+      "limit": "150 B",
       "path": "index.js"
     }
   ],
