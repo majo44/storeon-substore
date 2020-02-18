@@ -5,10 +5,12 @@ describe(`simple scenarions`, () => {
 
     let store;
     let subStore;
+    let siblingSubStore;
 
     beforeEach(() => {
         store = createStore([]);
         subStore = createSubstore(store, 'feature');
+        siblingSubStore = createSubstore(store, 'feature2');
     });
 
     it(`event dispatched on child should be propagate to parent`, async () => {
@@ -24,6 +26,7 @@ describe(`simple scenarions`, () => {
         store.dispatch('a');
         expect(spy).to.be.calledOnce;
     });
+
 
     it(`get on child should return undefined when there is no state of feature`, async () => {
         expect(subStore.get()).to.be.undefined;
@@ -54,7 +57,7 @@ describe(`simple scenarions`, () => {
             spy();
             continu();
         });
-        store.dispatch('a');
+        subStore.dispatch('a');
         await semaphore;
         expect(spy).to.be.calledOnce;
     });
@@ -65,7 +68,7 @@ describe(`simple scenarions`, () => {
                 flag: true
             }
         }));
-        store.dispatch('a');
+        subStore.dispatch('a');
         subStore.on('b', (state) => ({
             flag: !state.flag
         }));

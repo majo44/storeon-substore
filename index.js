@@ -1,4 +1,11 @@
 /**
+ * @param {*} event
+ * @return {boolean}
+ */
+const isBuildInEvent = (event) => event === '@init' || event === '@dispatch' || event === '@changed';
+
+
+/**
  * Creates instance of storeon feature sub store.
  *
  * @example
@@ -28,27 +35,55 @@
  */
 export function createSubstore(store, key) {
     return {
-        on: (event, handler) => store.on(event, (state, data) => {
-            const result = handler(state ? state[key] : undefined, data);
-            if (typeof result !== 'undefined' && result !== null) {
-                if (typeof result.then === 'function') {
-                    return result;
+        on: (event, handler) => store.on(event,
+            /**
+             * @param {*} state
+             * @param {*} data
+             */
+            (state, data) => {
+                let result;
+                if (data && data.____scoped) {
+                    if (data.scope === key) {
+                        result = handler(state ? state[key] : undefined, data.payload);
+                    }
+                } else {
+                    result = handler(state ? state[key] : undefined, data);
                 }
-                if (!state || result !== state[key]) {
-                    return {
-                        ...state,
-                        [key]: result,
-                    };
+                if (typeof result !== 'undefined' && result !== null) {
+                    if (typeof result.then === 'function') {
+                        return result;
+                    }
+                    if (!state || result !== state[key]) {
+                        return {
+                            ...state,
+                            [key]: result,
+                        };
+                    }
                 }
-            }
-            return undefined;
-        }),
+                return undefined;
+            }),
         get: () => {
             const state = store.get();
             return state ? state[key] : undefined;
         },
-        dispatch: /** @type {*} */(store.dispatch.bind(null)),
+        dispatch: /** @type {*} */(
+            /**
+             * @param {*} event
+             * @param {*} data
+             */
+            (event, data) => {
+                if (isBuildInEvent(event)) {
+                    /** @type {*} */(store).dispatch(event, data);
+                } else {
+                    /** @type {*} */(store).dispatch(event, {
+                        ____scoped: true,
+                        payload: data,
+                        scope: key,
+                    });
+                }
+            }),
     };
 }
+
 
 export default createSubstore;
