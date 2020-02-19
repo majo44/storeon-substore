@@ -1,6 +1,6 @@
 {
   "name": "storeon-substore",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Substore utility for [Storeon]",
   "repository": {
     "type": "git",
@@ -29,7 +29,7 @@
   "license": "MIT",
   "dependencies": {},
   "peerDependencies": {
-    "storeon": "^0.9.3"
+    "storeon": "^0.9.8"
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "^2.1.5",
@@ -48,11 +48,11 @@
     "sinon": "^7.4.2",
     "sinon-chai": "^3.3.0",
     "source-map-support": "^0.5.13",
-    "storeon": "^0.9.5",
+    "storeon": "^0.9.8",
     "ts-node": "^8.4.1",
     "tslib": "^1.10.0",
     "typedoc": "^0.15.0",
-    "typescript": "^3.6.3"
+    "typescript": "^3.7.5"
   },
   "scripts": {
     "size": "size-limit",
@@ -67,7 +67,7 @@
   },
   "size-limit": [
     {
-      "limit": "150 B",
+      "limit": "215 B",
       "path": "index.js"
     }
   ],

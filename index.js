@@ -1,3 +1,5 @@
+const p = Object.getPrototypeOf({});
+
 /**
  * Creates instance of storeon feature sub store.
  *
@@ -27,25 +29,44 @@
  * @return {import('storeon').Store<State[K], Events>} store
  */
 export function createSubstore(store, key) {
+    /**
+     * @type {Partial<State[K]>}
+     */
+    let diff;
     return {
-        on: (event, handler) => store.on(event, (state, data) => {
-            const result = handler(state ? state[key] : undefined, data);
-            if (typeof result !== 'undefined' && result !== null) {
-                if (typeof result.then === 'function') {
-                    return result;
-                }
-                if (!state || result !== state[key]) {
-                    return {
-                        ...state,
-                        [key]: result,
-                    };
-                }
+        on: (event, handler) => {
+            if (event === '@changed') {
+                return store.on('@changed', (state, data) => {
+                    if (key in data) {
+                        /** @type {(
+                         *  state: Readonly<State>,
+                         *  data: Partial<State[K]>) => Promise<void> | null | void}
+                         */
+                        (handler)(state ? state[key] : undefined, diff || data[key]);
+                        diff = undefined;
+                    }
+                });
             }
-            return undefined;
-        }),
+            return store.on(event, (state, data) => {
+                const r = handler(state ? state[key] : undefined, data);
+                if (typeof r !== 'undefined' && r !== null) {
+                    if (typeof r.then === 'function') {
+                        return r;
+                    }
+                    if (!state || r !== state[key]) {
+                        diff = r;
+                        return /** @type {Partial<State>} */ ({
+                            [key]: Object.getPrototypeOf(r) === p
+                                ? { ...(state ? state[key] : undefined), ...r } : r,
+                        });
+                    }
+                }
+                return undefined;
+            });
+        },
         get: () => {
-            const state = store.get();
-            return state ? state[key] : undefined;
+            const s = store.get();
+            return s ? s[key] : undefined;
         },
         dispatch: /** @type {*} */(store.dispatch.bind(null)),
     };

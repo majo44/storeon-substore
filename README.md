@@ -9,7 +9,7 @@
      
 Utility for creating feature sub store for [Storeon](https://github.com/storeon/storeon).    
 
-It size is 140 B (minified and gzipped) and uses [Size Limit](https://github.com/ai/size-limit) to control size.
+It size is 210 B (minified and gzipped) and uses [Size Limit](https://github.com/ai/size-limit) to control size.
 
 ### Overview
 The goal of this library is provide the easy way to create feature sub store, 
@@ -126,8 +126,17 @@ featureStore.on('toggleFeatureBooleanFlag', (state) => ({
 //    }   
 // }));
 
+// @changed event
+featureStore.on('@changed', (state, diff) => {
+    // here the state is a state of featureStore
+    // and diff contains only properties which are changed on featureStore level 
+});
+
 // dispatching event on sub store works exactly in same way as on parent one 
 featureStore.dispatch('toggleFeatureBooleanFlag');
+
+
+
 
 // taking state
 featureStore.get(); // returns { flag: true }
