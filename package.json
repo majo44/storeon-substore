@@ -1,6 +1,6 @@
 {
   "name": "storeon-substore",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "description": "Substore utility for [Storeon]",
   "repository": {
     "type": "git",
