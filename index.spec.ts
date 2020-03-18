@@ -1,13 +1,28 @@
-import * as createStore from 'storeon';
-import { createSubstore } from '../index.js';
+import { createStoreon, StoreonStore } from 'storeon';
+import { createSubstore } from './index';
+import * as sinon from 'sinon';
+import { expect, use } from 'chai';
+import * as sinonChai from "sinon-chai";
+use(sinonChai);
+
+interface State {
+    data?: string;
+    flag?: boolean;
+    counter?: number;
+    feature?: State;
+    feature1?: State;
+    feature2?: State;
+    sub1?: State;
+    sub2?: State;
+}
 
 describe(`simple scenarions`, () => {
 
-    let store;
-    let subStore;
+    let store: StoreonStore<State>;
+    let subStore: StoreonStore<State>;
 
     beforeEach(() => {
-        store = createStore([]);
+        store = createStoreon([]);
         subStore = createSubstore(store, 'feature');
     });
 
@@ -37,10 +52,10 @@ describe(`simple scenarions`, () => {
     it(`get on child should return proper state when there is state of feature of feature`, async () => {
         store.on('a', () => ({
             feature: {
-                feature: 'proper state'
+                data: 'proper state'
             }
         }));
-        const subSubStore = createSubstore(subStore, 'feature');
+        const subSubStore = createSubstore(subStore, 'data');
         store.dispatch('a');
         expect(subSubStore.get()).to.be.eq('proper state');
     });
@@ -48,11 +63,11 @@ describe(`simple scenarions`, () => {
 
     it(`should allows to dispatch async events`, async () => {
         const spy = sinon.spy();
-        let continu;
-        const semaphore = new Promise(res => continu = res);
+        let sempahore: any;
+        const semaphore = new Promise(res => sempahore = res);
         subStore.on('a', async () => {
             spy();
-            continu();
+            sempahore();
         });
         store.dispatch('a');
         await semaphore;
@@ -91,7 +106,7 @@ describe(`simple scenarions`, () => {
     });
 
     it('should behave in same way as regular store', () => {
-        function feature1CounterModule(store) {
+        function feature1CounterModule(store: StoreonStore<State>) {
             store.on('@init', () => ({
                 feature: {
                     counter: 0
@@ -104,7 +119,7 @@ describe(`simple scenarions`, () => {
                 }
             }));
         }
-        function feature2CounterModule(store) {
+        function feature2CounterModule(store: StoreonStore<State>) {
             const featureStore = createSubstore(store, 'feature');
             featureStore.on('@init', () => ({
                 counter: 0
@@ -113,15 +128,15 @@ describe(`simple scenarions`, () => {
                 counter: state.counter + 1,
             }));
         }
-        function feature3CounterModule(store) {
+        function feature3CounterModule(store: StoreonStore<State>) {
             const featureStore = createSubstore(store, 'feature');
             const featureCounterStore = createSubstore(featureStore, 'counter');
             featureCounterStore.on('@init', () => 0);
             featureCounterStore.on('increment', state => state + 1);
         }
-        const store1 = createStore([feature1CounterModule]);
-        const store2 = createStore([feature2CounterModule]);
-        const store3 = createStore([feature3CounterModule]);
+        const store1 = createStoreon([feature1CounterModule]);
+        const store2 = createStoreon([feature2CounterModule]);
+        const store3 = createStoreon([feature3CounterModule]);
         store1.dispatch('increment');
         store2.dispatch('increment');
         store3.dispatch('increment');

@@ -1,3 +1,29 @@
+import { StoreonStore } from 'storeon';
+
+interface DispatchableEvents<State> {
+    '@init': never;
+    '@changed': State;
+}
+
+type EventHandler<
+    State,
+    Events,
+    Event extends keyof (Events & DispatchableEvents<State>)
+    > = (
+    state: Readonly<State>,
+    data: (Events & DispatchableEvents<State>)[Event]
+) => Partial<State> | Promise<void> | null | void
+
+function isChangeEventHandler<State, Event extends PropertyKey>(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    event: Event, handler: EventHandler<State, any, any>): handler is EventHandler<State, any, '@changed'> {
+    return event === '@changed';
+}
+
+function isPromise<T>(x: T | Promise<any>): x is Promise<any> {
+    return typeof (x as Promise<any>).then === 'function'
+}
+
 const p = Object.getPrototypeOf({});
 
 /**
@@ -21,55 +47,40 @@ const p = Object.getPrototypeOf({});
  * featureStore.dispatch('toggleFeatureBooleanFlag');
  * featureStore.get(); // returns { flag: false }
  *
- * @template {object} State
- * @template Events
- * @template {keyof State} K
- * @param {import('storeon').Store<State, Events>} store
- * @param {K} key
- * @return {import('storeon').Store<State[K], Events>} store
  */
-export function createSubstore(store, key) {
-    /**
-     * @type {Partial<State[K]>}
-     */
-    let diff;
+export function createSubstore<State, K extends keyof State, Events>(
+    store: StoreonStore<State, Events>,
+    key: K): StoreonStore<State[K], Events> {
+    let diff: Partial<State[K]>;
     return {
         on: (event, handler) => {
-            if (event === '@changed') {
+            if (isChangeEventHandler(event, handler)) {
                 return store.on('@changed', (state, data) => {
                     if (key in data) {
-                        /** @type {(
-                         *  state: Readonly<State>,
-                         *  data: Partial<State[K]>) => Promise<void> | null | void}
-                         */
-                        (handler)(state ? state[key] : undefined, diff || data[key]);
+                        handler(state ? state[key] : undefined, diff || data[key]);
                         diff = undefined;
                     }
                 });
             }
             return store.on(event, (state, data) => {
-                const r = handler(state ? state[key] : undefined, data);
+                const r = handler(state ? state[key] : undefined, data as any);
                 if (typeof r !== 'undefined' && r !== null) {
-                    if (typeof r.then === 'function') {
-                        return r;
-                    }
+                    if (isPromise(r)) return r;
                     if (!state || r !== state[key]) {
                         diff = r;
-                        return /** @type {Partial<State>} */ ({
+                        return ({
                             [key]: Object.getPrototypeOf(r) === p
                                 ? { ...(state ? state[key] : undefined), ...r } : r,
-                        });
+                        }) as Partial<State>;
                     }
                 }
-                return undefined;
+                return null;
             });
         },
         get: () => {
             const s = store.get();
             return s ? s[key] : undefined;
         },
-        dispatch: /** @type {*} */(store.dispatch.bind(null)),
+        dispatch: store.dispatch.bind(null) as any,
     };
 }
-
-export default createSubstore;

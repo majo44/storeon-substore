@@ -1,5 +1,9 @@
 # Change Log
 This project adheres to [Semantic Versioning](http://semver.org/).
+## 1.0.0
+* Reimplenting in typescript
+* Update storeon@2.0.1
+
 ## 0.5.0
 * Simplification.
 #### Breaking Changes
