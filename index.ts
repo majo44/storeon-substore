@@ -48,29 +48,30 @@ const p = Object.getPrototypeOf({});
  * featureStore.get(); // returns { flag: false }
  *
  */
-export function createSubstore<State, K extends keyof State, Events>(
+export function createSubstore<State, K extends keyof NonNullable<State>, Events>(
     store: StoreonStore<State, Events>,
-    key: K): StoreonStore<State[K], Events> {
-    let diff: Partial<State[K]>;
+    key: K): StoreonStore<NonNullable<State>[K], Events> {
+    const k = key as unknown as keyof State;
+    let diff: Partial<NonNullable<State>[K]>;
     return {
         on: (event, handler) => {
             if (isChangeEventHandler(event, handler)) {
                 return store.on('@changed', (state, data) => {
                     if (key in data) {
-                        handler(state ? state[key] : undefined, diff || data[key]);
+                        handler(state ? (state as Readonly<NonNullable<State>>)[key] : undefined, diff || data[k]);
                         diff = undefined;
                     }
                 });
             }
             return store.on(event, (state, data) => {
-                const r = handler(state ? state[key] : undefined, data as any);
+                const r = handler(state ? (state as Readonly<NonNullable<State>>)[key] : undefined, data as any);
                 if (typeof r !== 'undefined' && r !== null) {
                     if (isPromise(r)) return r;
-                    if (!state || r !== state[key]) {
+                    if (!state || r !== state[k]) {
                         diff = r;
                         return ({
                             [key]: Object.getPrototypeOf(r) === p
-                                ? { ...(state ? state[key] : undefined), ...r } : r,
+                                ? { ...(state ? state[k] : undefined), ...r } : r,
                         }) as Partial<State>;
                     }
                 }
@@ -79,7 +80,7 @@ export function createSubstore<State, K extends keyof State, Events>(
         },
         get: () => {
             const s = store.get();
-            return s ? s[key] : undefined;
+            return s ? (s as Readonly<NonNullable<State>>)[key] : undefined;
         },
         dispatch: store.dispatch.bind(null) as any,
     };

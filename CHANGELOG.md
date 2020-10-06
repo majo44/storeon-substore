@@ -1,5 +1,9 @@
 # Change Log
 This project adheres to [Semantic Versioning](http://semver.org/).
+## 1.1.0
+* Update storeon@3.0.3
+* Better types handling for optional state properties
+
 ## 1.0.0
 * Reimplenting in typescript
 * Update storeon@2.0.1
