@@ -1,5 +1,10 @@
 # Change Log
 This project adheres to [Semantic Versioning](http://semver.org/).
+## 1.2.0
+* Update storeon@3.0.4
+* Better support for @changed event, handler now will be called only/always when the related sub state
+will be changed 
+
 ## 1.1.0
 * Update storeon@3.0.3
 * Better types handling for optional state properties

@@ -1,30 +1,29 @@
-import { StoreonStore } from 'storeon';
+import { StoreonStore, createStoreon } from 'storeon';
 
-interface DispatchableEvents<State> {
-    '@init': never;
-    '@changed': State;
-}
+const p = Object.getPrototypeOf({});
 
-type EventHandler<
-    State,
-    Events,
-    Event extends keyof (Events & DispatchableEvents<State>)
-    > = (
-    state: Readonly<State>,
-    data: (Events & DispatchableEvents<State>)[Event]
-) => Partial<State> | Promise<void> | null | void
-
-function isChangeEventHandler<State, Event extends PropertyKey>(
+const isChangeEventHandler = <State, Event extends PropertyKey>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    event: Event, handler: EventHandler<State, any, any>): handler is EventHandler<State, any, '@changed'> {
+    event: Event, handler: createStoreon.EventHandler<State, any, any>): handler is createStoreon.EventHandler<State, any, '@changed'> => {
     return event === '@changed';
 }
 
-function isPromise<T>(x: T | Promise<any>): x is Promise<any> {
+const isPromise = <T>(x: T | Promise<any>): x is Promise<any> => {
     return typeof (x as Promise<any>).then === 'function'
 }
 
-const p = Object.getPrototypeOf({});
+const isObject = (x: any): boolean => {
+    return x && Object.getPrototypeOf(x) === p;
+}
+
+const diff = (oldState: any = {}, newState: any = {}): any => {
+    return [...Object.keys(oldState), ...Object.keys(newState)].reduce((r, key) => {
+        if (oldState[key] !== newState[key]) {
+            r[key] = newState[key]
+        }
+        return r;
+    }, {} as any)
+}
 
 /**
  * Creates instance of storeon feature sub store.
@@ -52,36 +51,43 @@ export function createSubstore<State, K extends keyof NonNullable<State>, Events
     store: StoreonStore<State, Events>,
     key: K): StoreonStore<NonNullable<State>[K], Events> {
     const k = key as unknown as keyof State;
-    let diff: Partial<NonNullable<State>[K]>;
+    const get = () => {
+        const s = store.get();
+        return s ? (s as Readonly<NonNullable<State>>)[key] : undefined;
+    }
+
     return {
         on: (event, handler) => {
             if (isChangeEventHandler(event, handler)) {
-                return store.on('@changed', (state, data) => {
-                    if (key in data) {
-                        handler(state ? (state as Readonly<NonNullable<State>>)[key] : undefined, diff || data[k]);
-                        diff = undefined;
+                let localState = get();
+                const unregister = store.on('@changed', (state) => {
+                    const newState = state ? (state as any)[key] : undefined;
+                    if (localState !== newState) {
+                        const changes = isObject(newState) ? diff(localState, newState): {};
+                        localState = newState;
+                        handler(newState, changes);
                     }
                 });
+                return () => {
+                    localState = undefined;
+                    unregister();
+                }
             }
             return store.on(event, (state, data) => {
-                const r = handler(state ? (state as Readonly<NonNullable<State>>)[key] : undefined, data as any);
+                const r = handler(state ? (state as any)[key] : undefined, data as any);
                 if (typeof r !== 'undefined' && r !== null) {
                     if (isPromise(r)) return r;
                     if (!state || r !== state[k]) {
-                        diff = r;
                         return ({
-                            [key]: Object.getPrototypeOf(r) === p
-                                ? { ...(state ? state[k] : undefined), ...r } : r,
+                            [key]: isObject(r)
+                                ? { ...(state ? state[k] : undefined), ...r }
+                                : r,
                         }) as Partial<State>;
                     }
                 }
-                return null;
             });
         },
-        get: () => {
-            const s = store.get();
-            return s ? (s as Readonly<NonNullable<State>>)[key] : undefined;
-        },
+        get,
         dispatch: store.dispatch.bind(null) as any,
     };
 }

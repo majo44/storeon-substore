@@ -159,7 +159,7 @@ describe(`simple scenarions`, () => {
     // As storeon is not checking that as well, we will not do that on the substore level
     // so each time when handler is returning data, we will update the state even the data is same
     // it ('should return same state as previous if value in sub state not changed on complex object', () => {
-    //     const featureStore = createSubstore(subStore, 'sub');
+    //     const featureStore = createSubstore(subStore, 'sub1');
     //     featureStore.on('set', (s, data) => data);
     //     const val1 = { x : "1"};
     //     const val2 = { x : "2"};
@@ -211,6 +211,76 @@ describe(`simple scenarions`, () => {
         subStore.dispatch('setFeature', newFeatureData);
         expect(spy).to.be.calledTwice;
         expect(spy).to.be.calledWith(subStore.get(), newFeatureData);
+
+    })
+
+    it ('should not call the @changed event handler if changes are in the state sibling', () => {
+
+        const spyChangeGlobal = sinon.spy(/*() => console.log(arguments)*/);
+        const spyChangeFeature1 = sinon.spy(/*() => console.log(arguments)*/);
+        const spyChangeFeature2  = sinon.spy(/*() => console.log(arguments)*/);
+
+        const featureStore = createSubstore(store, 'feature');
+        const feature1Store = createSubstore(featureStore, 'feature1');
+        const feature2Store = createSubstore(featureStore, 'feature2');
+
+        store.on('set', (s, data) => data);
+        store.on('@changed', spyChangeGlobal);
+        feature1Store.on('set1', (s, data) => data);
+        feature1Store.on('@changed', spyChangeFeature1);
+        feature2Store.on('set2', (s, data) => data);
+        feature2Store.on('@changed', spyChangeFeature2);
+
+        store.dispatch('set', { data: 'a', feature: {feature1: {}, feature2: {}}});
+        expect(spyChangeGlobal).to.be.calledOnce;
+        expect(spyChangeFeature1).to.be.calledOnce;
+        expect(spyChangeFeature2).to.be.calledOnce;
+
+        feature1Store.dispatch('set1', { });
+        expect(spyChangeGlobal).to.be.calledTwice;
+        expect(spyChangeFeature1).to.be.calledTwice;
+        expect(spyChangeFeature2).to.be.calledOnce;
+
+        feature2Store.dispatch('set2', { });
+        expect(spyChangeGlobal).to.be.callCount(3);
+        expect(spyChangeFeature1).to.be.calledTwice;
+        expect(spyChangeFeature2).to.be.calledTwice;
+    })
+
+    it ('should call call the @changed event handler if changes are on main level', () => {
+
+        const spyChangeGlobal = sinon.spy(/*() => console.log(arguments)*/);
+        const spyChangeFeature = sinon.spy(/*() => console.log(arguments)*/);
+        const spyChangeFeature1 = sinon.spy(/*() => console.log(arguments)*/);
+        const spyChangeFeature2  = sinon.spy(/*() => console.log(arguments)*/);
+
+        const featureStore = createSubstore(store, 'feature');
+        const feature1Store = createSubstore(featureStore, 'feature1');
+        const feature2Store = createSubstore(featureStore, 'feature2');
+
+        store.on('set', (s, data) => data);
+        store.on('@changed', spyChangeGlobal);
+        featureStore.on('@changed', spyChangeFeature);
+        feature1Store.on('@changed', spyChangeFeature1);
+        feature2Store.on('@changed', spyChangeFeature2);
+
+        store.dispatch('set', { data: 'a'});
+        expect(spyChangeGlobal).to.be.calledOnce;
+        expect(spyChangeFeature).to.be.not.called;
+        expect(spyChangeFeature1).to.be.not.called;
+        expect(spyChangeFeature2).to.be.not.called;
+
+        store.dispatch('set', { feature: { feature1: {} } });
+        expect(spyChangeGlobal).to.be.calledTwice;
+        expect(spyChangeFeature).to.be.calledOnce;
+        expect(spyChangeFeature1).to.be.calledOnce;
+        expect(spyChangeFeature2).to.be.not.called;
+
+        store.dispatch('set', { feature: { feature2: {} } });
+        expect(spyChangeGlobal).to.be.callCount(3);
+        expect(spyChangeFeature).to.be.calledTwice;
+        expect(spyChangeFeature1).to.be.calledTwice;
+        expect(spyChangeFeature2).to.be.calledOnce;
 
     })
 
