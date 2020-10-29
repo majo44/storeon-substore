@@ -1,4 +1,5 @@
 import { createStoreon, StoreonStore } from 'storeon';
+import { storeonLogger } from 'storeon/devtools';
 import { createSubstore } from './index';
 import * as sinon from 'sinon';
 import { expect, use } from 'chai';
@@ -147,11 +148,11 @@ describe(`simple scenarions`, () => {
     it ('should return same state as previous if value in sub state not changed on primitives', () => {
         subStore.on('set', (s, data) => data);
         subStore.dispatch('set', 1);
-        let st1 = store.get();
+        const st1 = store.get();
         subStore.dispatch('set', 2);
-        let st2 = store.get();
+        const st2 = store.get();
         subStore.dispatch('set', 2);
-        let st3 = store.get();
+        const st3 = store.get();
         expect(st1).to.not.be.eq(st2);
         expect(st2).to.be.eq(st3);
     });
@@ -282,6 +283,109 @@ describe(`simple scenarions`, () => {
         expect(spyChangeFeature1).to.be.calledTwice;
         expect(spyChangeFeature2).to.be.calledOnce;
 
+    });
+
+    describe ('should support scoped events', () => {
+        it ('when events are strings', () => {
+            interface ModuleState {
+                data: any;
+            }
+            const module = (store: StoreonStore<ModuleState>) => {
+                store.on('action', (_, d) => ({
+                    data: d
+                }));
+            };
+
+            interface AppState {
+                a: ModuleState;
+                b: ModuleState;
+            }
+
+            const store = createStoreon<AppState>([storeonLogger]);
+
+            const storeA = createSubstore(store, 'a', true);
+            module(storeA);
+
+            const storeB = createSubstore(store, 'b', true);
+            module(storeB);
+
+            storeA.dispatch('action', 'a updated');
+            expect(store.get()).to.eql({ a: { data: 'a updated' } });
+
+            storeB.dispatch('action', 'b updated');
+            expect(store.get()).to.eql({ a: { data: 'a updated' }, b: { data: 'b updated' } });
+
+        });
+
+        it ('when events are symbols', () => {
+            const action = Symbol('action');
+
+            interface ModuleState {
+                data: any;
+            }
+            const module = (store: StoreonStore<ModuleState>) => {
+                store.on(action, (_, d) => ({
+                    data: d
+                }));
+            };
+
+            interface AppState {
+                a: ModuleState;
+                b: ModuleState;
+            }
+
+            const store = createStoreon<AppState>([storeonLogger]);
+
+            const storeA = createSubstore(store, 'a', true);
+            module(storeA);
+
+            const storeB = createSubstore(store, 'b', true);
+            module(storeB);
+
+            storeA.dispatch(action, 'a updated');
+            expect(store.get()).to.eql({ a: { data: 'a updated' } });
+
+            storeB.dispatch(action, 'b updated');
+            expect(store.get()).to.eql({ a: { data: 'a updated' }, b: { data: 'b updated' } });
+
+        })
+
     })
 
+    describe('examples', () => {
+        it ('scoped events', () =>{
+            // lets create generic counter module
+            const counterModule = (store: StoreonStore<any>) => {
+                store.on('inc', state => ({
+                    count: (state?.count || 0) + 1
+                }));
+                store.on('dec', state => ({
+                    count: (state?.count || 0) + 1
+                }));
+            }
+            // create master store
+            const store = createStoreon<any>([]);
+
+            // create counterA substore
+            // please notice that we are using third argument
+            const counterAStore = createSubstore(store, 'counterA', true);
+            counterModule(counterAStore);
+
+            // create counterB substore
+            // please notice that we are using third argument
+            const counterBStore = createSubstore(store, 'counterB', true);
+            counterModule(counterBStore);
+
+            // now lets dispatch events first on counterAStore
+            counterAStore.dispatch('inc');
+            expect(store.get()).to.eql({ counterA: { count: 1 } });
+            // console.log(store.get()) // { counterA: { count: 1 } }
+
+            // then on counterBStore
+            counterBStore.dispatch('inc');
+            expect(store.get()).to.eql({ counterA: { count: 1 }, counterB: { count: 1 } });
+            // console.log(store.get()) // { counterA: { count: 1 }, counterB: { count: 1 } }
+
+        })
+    });
 });

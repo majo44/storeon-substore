@@ -9,7 +9,7 @@
      
 Utility for creating feature sub store for [Storeon](https://github.com/storeon/storeon).    
 
-It size is 315 B (minified and gzipped) and uses [Size Limit](https://github.com/ai/size-limit) to control size.
+It size is 420 B (minified and gzipped) and uses [Size Limit](https://github.com/ai/size-limit) to control size.
 
 ### Overview
 The goal of this library is provide the easy way to create feature sub store, 
@@ -89,10 +89,6 @@ export function featureCounterModule(store) {
 Three important remarks:
 * The state delivered to handler attached to sub store, can get the `undefined` 
 value if the state of the feature is not yet set.
-* Sub store operates on same events like parent store,
-what means that dispatched event on sub store will be also propagated to parent, 
-and event dispatched on parent will be also handled by handlers registered on sub store
-for that event.   
 
 ### Install
 > npm i storeon-substore --save
@@ -139,7 +135,49 @@ featureStore.get(); // returns { flag: true }
 // featureStore.get().feature; // returns { flag: true }
 ```
 
+### Scoped events
+This library allows also to scope the events. By default, substore is operates on same set of events 
+like parent store. But there is possibility to narrow scope of all dispatched events only to 
+substore handlers. This can be useful for storeon modules reuse. Look at the example:
+
+```typescript
+import createStore from "storeon";
+import { createSubstore } from "storeon-substore";
+// lets create generic counter module
+const counterModule = (store: StoreonStore<any>) => {
+    store.on('inc', state => ({
+        count: (state?.count || 0) + 1
+    }));
+    store.on('dec', state => ({
+        count: (state?.count || 0) + 1
+    }));
+}
+// create master store
+const store = createStoreon<any>([]);
+
+// create counterA substore
+// please notice that we are using third argument
+const counterAStore = createSubstore(store, 'counterA', true);
+counterModule(counterAStore);
+
+// create counterB substore
+// please notice that we are using third argument
+const counterBStore = createSubstore(store, 'counterB', true);
+counterModule(counterBStore);
+
+// now lets dispatch events first on counterAStore
+counterAStore.dispatch('inc');
+console.log(store.get()) // { counterA: { count: 1 } }
+
+// then on counterBStore
+counterBStore.dispatch('inc');
+console.log(store.get()) // { counterA: { count: 1 }, counterB: { count: 1 } }
+```
+
 ### Api
 - `createSubstore` - is factory function which returns sub feature store. Params:
   - `parent` the parent store, can be a result of `createStore` or other sub store created by `createSubstore`
   - `key` the sub state property key in parent state 
+  - `scopeEvents` (optional) boolean flag which will enable the events scoping, 
+  so every event dispatched on the substore will be only scoped to this substore, 
+  so only handlers attached to this substore will handle the event  

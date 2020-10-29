@@ -1,4 +1,5 @@
-import { StoreonStore, createStoreon } from 'storeon';
+import { StoreonStore, createStoreon, StoreonDispatch } from 'storeon';
+import DispatchableEvents = createStoreon.DispatchableEvents;
 
 const p = Object.getPrototypeOf({});
 
@@ -16,6 +17,10 @@ const isObject = (x: any): boolean => {
     return x && Object.getPrototypeOf(x) === p;
 }
 
+const isSymbol = (x: any): boolean => {
+    return x && typeof x === 'symbol';
+}
+
 const diff = (oldState: any = {}, newState: any = {}): any => {
     return [...Object.keys(oldState), ...Object.keys(newState)].reduce((r, key) => {
         if (oldState[key] !== newState[key]) {
@@ -24,6 +29,7 @@ const diff = (oldState: any = {}, newState: any = {}): any => {
         return r;
     }, {} as any)
 }
+
 
 /**
  * Creates instance of storeon feature sub store.
@@ -49,8 +55,29 @@ const diff = (oldState: any = {}, newState: any = {}): any => {
  */
 export function createSubstore<State, K extends keyof NonNullable<State>, Events>(
     store: StoreonStore<State, Events>,
-    key: K): StoreonStore<NonNullable<State>[K], Events> {
+    key: K,
+    scopeEvents?: boolean): StoreonStore<NonNullable<State>[K], Events> {
+
     const k = key as unknown as keyof State;
+
+    const scopeEventsMap: Record<PropertyKey, PropertyKey> = {
+        '@init': '@init',
+        '@changed': '@changed',
+        '@dispatch': '@dispatch'
+    };
+
+    const getEvent = (event: any): any => {
+        if (!scopeEvents) {
+            return event;
+        }
+        if (!scopeEventsMap[event]) {
+            scopeEventsMap[event] = isSymbol(event)
+                ? Symbol(`[@${key}] ${event.description || event.toString()}`)
+                : scopeEventsMap[event] = `[@${key}] ${event} `;
+        }
+        return scopeEventsMap[event];
+    }
+
     const get = () => {
         const s = store.get();
         return s ? (s as Readonly<NonNullable<State>>)[key] : undefined;
@@ -73,7 +100,7 @@ export function createSubstore<State, K extends keyof NonNullable<State>, Events
                     unregister();
                 }
             }
-            return store.on(event, (state, data) => {
+            return store.on(getEvent(event), (state, data) => {
                 const r = handler(state ? (state as any)[key] : undefined, data as any);
                 if (typeof r !== 'undefined' && r !== null) {
                     if (isPromise(r)) return r;
@@ -88,6 +115,8 @@ export function createSubstore<State, K extends keyof NonNullable<State>, Events
             });
         },
         get,
-        dispatch: store.dispatch.bind(null) as any,
+        dispatch: ((event, ...data): void => {
+            store.dispatch(getEvent(event), ...(data as any || []));
+        }) as StoreonDispatch<Events & DispatchableEvents<NonNullable<State>[K]>>
     };
 }
