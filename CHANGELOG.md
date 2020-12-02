@@ -1,5 +1,8 @@
 # Change Log
 This project adheres to [Semantic Versioning](http://semver.org/).
+## 1.4.0
+* Update storeon@3.1.1
+
 ## 1.3.0
 * Scoped events 
 
