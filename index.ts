@@ -83,7 +83,7 @@ export function createSubstore<State, K extends keyof NonNullable<State>, Events
         return s ? (s as Readonly<NonNullable<State>>)[key] : undefined;
     }
 
-    return {
+    const newStore: StoreonStore<NonNullable<State>[K], Events> = {
         on: (event, handler) => {
             if (isChangeEventHandler(event, handler)) {
                 let localState = get();
@@ -92,7 +92,7 @@ export function createSubstore<State, K extends keyof NonNullable<State>, Events
                     if (localState !== newState) {
                         const changes = isObject(newState) ? diff(localState, newState): {};
                         localState = newState;
-                        handler(newState, changes);
+                        handler(newState, changes, newStore);
                     }
                 });
                 return () => {
@@ -101,7 +101,7 @@ export function createSubstore<State, K extends keyof NonNullable<State>, Events
                 }
             }
             return store.on(getEvent(event), (state, data) => {
-                const r = handler(state ? (state as any)[key] : undefined, data as any);
+                const r = handler(state ? (state as any)[key] : undefined, data as any, newStore);
                 if (typeof r !== 'undefined' && r !== null) {
                     if (isPromise(r)) return r;
                     if (!state || r !== state[k]) {
@@ -119,4 +119,5 @@ export function createSubstore<State, K extends keyof NonNullable<State>, Events
             store.dispatch(getEvent(event), ...(data as any || []));
         }) as StoreonDispatch<Events & DispatchableEvents<NonNullable<State>[K]>>
     };
+    return newStore;
 }
